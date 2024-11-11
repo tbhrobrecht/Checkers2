@@ -17,8 +17,8 @@ q_table = agent.q_table
 
 neural_network_model = QNetwork()
 capacity = 10000
-batch_size = 64
 replay_memory = ReplayMemory(capacity)
+batch_size = 64
 
 moves_list = []
 number_of_moves = 0
