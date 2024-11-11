@@ -27,17 +27,18 @@ learning_rate = 0.1
 discount_factor = 0.9
 greedy = 0.2
 
+red_promotion = 5
+black_promotion = 0
+
 def game_over():
     global board, graphics, selected_piece, valid_moves, new_selected_piece, new_valid_moves, new_selected_random_piece, player_1_turn, player_2_turn, moves_list, number_of_moves
     board = [
-        [0, 1, 0, 1, 0, 1, 0, 1],
-        [1, 0, 1, 0, 1, 0, 1, 0],
-        [0, 1, 0, 1, 0, 1, 0, 1],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [-1, 0, -1, 0, -1, 0, -1, 0],
-        [0, -1, 0, -1, 0, -1, 0, -1],
-        [-1, 0, -1, 0, -1, 0, -1, 0]
+        [1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0],
+        [-1, 0, -1, 0, -1, 0],
+        [0, -1, 0, -1, 0, -1]
     ]
     graphics = UserInterface()
     selected_piece = None
@@ -126,7 +127,7 @@ while run:
             row_event, column_event = make_move
             graphics.board[row_event][column_event] = selected_random_piece[0]
 
-            if row_event == 0:
+            if row_event == black_promotion:
                 graphics.board[row_event][column_event] = -2
             graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
 
@@ -250,7 +251,7 @@ while run:
             kings = total_pieces.count(2)
             reward += (pawns + 3*kings)
 
-            if row_event == 7:
+            if row_event == red_promotion:
                 reward += 10
                 graphics.board[row_event][column_event] = 2
             graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
@@ -351,7 +352,8 @@ while run:
             kings = total_pieces.count(2)
             reward += (pawns + 3*kings)
 
-            if row_event == 7:
+
+            if row_event == red_promotion:
                 reward += 10
                 graphics.board[row_event][column_event] = 2
             graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
@@ -479,7 +481,7 @@ while run:
             kings = total_pieces.count(2)
             reward += (pawns + 3*kings)
 
-            if row_event == 7:
+            if row_event == red_promotion:
                 reward += 10
                 graphics.board[row_event][column_event] = 2
             graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
@@ -581,7 +583,7 @@ while run:
                 else:
                     if (row_event, column_event) in valid_moves:
                         graphics.board[row_event][column_event] = graphics.board[selected_piece[0]][selected_piece[1]]
-                        if row_event == 0:
+                        if row_event == black_promotion:
                             graphics.board[row_event][column_event] = -2
                         graphics.board[selected_piece[0]][selected_piece[1]] = 0
                         player_1_turn = False
@@ -594,7 +596,7 @@ while run:
                             reward -= 30
 
                             new_selected_piece = (row_event, column_event)
-                            if row_event == 0 or graphics.board[row_event][column_event] == -2:
+                            if row_event == black_promotion or graphics.board[row_event][column_event] == -2:
                                 new_valid_moves = check_move.king_eat_pieces_minus_2(new_selected_piece, graphics.board)
                             else:
                                 new_valid_moves = check_move.eat_pieces_minus_1(new_selected_piece, graphics.board)

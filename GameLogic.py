@@ -1,7 +1,7 @@
 class CheckMove:
     def __init__(self):
-        self.ROWS = 8
-        self.COLUMNS = 8
+        self.ROWS = 6
+        self.COLUMNS = 6
 
     def check_moves_minus_1(self, piece_coordination, board):
         row_check_moves, column_check_moves = piece_coordination

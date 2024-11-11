@@ -8,8 +8,8 @@ class UserInterface:
         pygame.display.set_caption("Checkers!")
 
         self.dimensions = {
-            "ROWS": 8,
-            "COLUMNS": 8,
+            "ROWS": 6,
+            "COLUMNS": 6,
             "checker_tile": 100
         }
 
@@ -28,15 +28,13 @@ class UserInterface:
         }
 
         self.board = [
-            [0, 1, 0, 1, 0, 1, 0, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0],
-            [0, 1, 0, 1, 0, 1, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [-1, 0, -1, 0, -1, 0, -1, 0],
-            [0, -1, 0, -1, 0, -1, 0, -1],
-            [-1, 0, -1, 0, -1, 0, -1, 0]
-        ]
+        [1, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 0, 1],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0],
+        [-1, 0, -1, 0, -1, 0],
+        [0, -1, 0, -1, 0, -1]
+    ]
 
     def draw_board(self, selected_piece=None, valid_moves=None):
         ROWS, COLUMNS = self.dimensions["ROWS"], self.dimensions["COLUMNS"]
