@@ -1,7 +1,7 @@
 import random
 import pygame
 import torch
-from DQN import QNetwork, ReplayMemory
+# from DQN import QNetwork, ReplayMemory
 from GameLogic import CheckMove
 from UserInterface import UserInterface
 from QLearningAgent import QLearningAgent
@@ -15,10 +15,10 @@ endgame_q_table = endgame_agent.q_table
 agent = State_QLearningAgent(alpha=0.1, gamma=0.9, epsilon=0.2)
 q_table = agent.q_table
 
-neural_network_model = QNetwork()
 capacity = 10000
-replay_memory = ReplayMemory(capacity)
 batch_size = 64
+# neural_network_model = QNetwork()
+# replay_memory = ReplayMemory(capacity)
 
 moves_list = []
 number_of_moves = 0
@@ -49,7 +49,7 @@ def game_over():
     player_1_turn = True
     player_2_turn = False
     number_of_moves = 0
-    neural_network_model.save_model()
+    # neural_network_model.save_model()
 
 
 # starting the game
@@ -295,125 +295,125 @@ while run:
                 else:
                     iterator = True
 
-        elif nn_endgame: # placeholder for nn endgame
-            neural_network_model.load_state_dict(torch.load('DQN.pth'))
-            neural_network_model.eval()
-            for i in range(len(graphics.board)):
-                for j in range(len(graphics.board[i])):
-                    if graphics.board[i][j] == 1:
-                        state_actions_list.append((graphics.board[i][j], (i, j), check_move.check_moves_1((i, j), graphics.board)))
-                    elif graphics.board[i][j] == 2:
-                        state_actions_list.append((graphics.board[i][j], (i, j), check_move.king_check_moves_2((i, j), graphics.board)))
-
-            state_actions_list = [state_action for state_action in state_actions_list if len(state_action[-1]) > 0]
-            state_actions_size = len(state_actions_list)
-
-            for state in state_actions_list:
-                for action in state[-1]:
-                    board_string = str(graphics.board)
-                    current_state_string = str(state[1])
-                    current_action_string = str(action)
-                    q_values.append(neural_network_model.predict_q_value(state[0], board_string, current_state_string, current_action_string))
-                    q_values_states.append((state[1], action))
-
-            max_q_value = max(q_values, default=0)
-            best_action = []
-            for i in range(len(q_values)):
-                if q_values[i] == max_q_value:
-                    best_action.append(q_values_states[i])
-
-            if len(best_action) < 1:
-                game_over()
-            else:
-                select_best_action = random.choice(best_action)
-                make_move = select_best_action[1]
-                selected_random_piece = (graphics.board[select_best_action[0][0]][select_best_action[0][1]], select_best_action[0], make_move)
-
-            player_1_turn = True
-            player_2_turn = False
-
-            if iterator:
-                make_move = random.choice(new_state_actions_list)
-                selected_random_piece = new_selected_random_piece
-                iterator = False
-
-            row_event, column_event = make_move
-            graphics.board[row_event][column_event] = selected_random_piece[0]
-
-            if graphics.board[row_event][column_event] == 1:
-                reward += 1
-            elif graphics.board[row_event][column_event] == 2:
-                reward += 2
-
-            total_pieces = []
-            for i in range(len(graphics.board)):
-                total_pieces += graphics.board[i]
-            pawns = total_pieces.count(1)
-            kings = total_pieces.count(2)
-            reward += (pawns + 3*kings)
-
-
-            if row_event == red_promotion:
-                reward += 10
-                graphics.board[row_event][column_event] = 2
-            graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
-
-            if abs(row_event - selected_random_piece[1][0]) == 2:
-                reward += 30
-                row_capture = (row_event + selected_random_piece[1][0]) // 2
-                column_capture = (column_event + selected_random_piece[1][1]) // 2
-                graphics.board[row_capture][column_capture] = 0
-                chain_eating = True
-
-            following_state = (selected_random_piece[0], make_move)
-
-            replay_memory.push(piece=selected_random_piece[0], board=graphics.board, current_state=selected_random_piece[1], current_action=make_move, reward=reward, next_state=following_state, action_space=action_spaces)
-
-            if len(replay_memory) > batch_size:
-                experience = replay_memory.sample(batch_size)
-                piece, board, current_state, current_action, reward, next_state, action_space = zip(*experience)
-                random_int = random.randint(0, len(piece) - 1)
-
-                piece = piece[random_int]
-                board = board[random_int]
-                current_state = current_state[random_int]
-                current_action = current_action[random_int]
-                reward = reward[random_int]
-                next_state = next_state[random_int]
-                action_space = action_space[random_int]
-
-                current_q_value, new_q_value = endgame_agent.update_neural_network(piece, board, current_state, current_action, reward, next_state, action_space)
-                current_q_value = torch.tensor(current_q_value, dtype=torch.float32, requires_grad=True)
-                new_q_value = torch.tensor(new_q_value, dtype=torch.float32, requires_grad=True)
-                loss = neural_network_model.criterion(current_q_value, new_q_value)
-                neural_network_model.optimiser.zero_grad()
-                loss.backward()
-                neural_network_model.optimiser.step()
-
-            if chain_eating:
-                reward += reward
-                chain_eating = False
-                player_1_turn = False
-                player_2_turn = True
-                state_actions_list = []
-                new_state_actions_list = []
-
-                if following_state[0] == 1:  # check here for all the possible moves
-                    state_actions_list.append(check_move.eat_pieces_1(following_state[1], graphics.board))
-                elif following_state[0] == 2:
-                    state_actions_list.append(check_move.king_eat_pieces_2(following_state[1], graphics.board))
-
-                for state_action in state_actions_list:
-                    if len(state_action) > 0:
-                        new_state_actions_list += state_action
-                new_selected_random_piece = (following_state[0], following_state[1], new_state_actions_list)
-
-                if len(new_state_actions_list) < 1:
-                    player_1_turn = True
-                    player_2_turn = False
-
-                else:
-                    iterator = True
+        # elif nn_endgame: # placeholder for nn endgame
+        #     neural_network_model.load_state_dict(torch.load('DQN.pth'))
+        #     neural_network_model.eval()
+        #     for i in range(len(graphics.board)):
+        #         for j in range(len(graphics.board[i])):
+        #             if graphics.board[i][j] == 1:
+        #                 state_actions_list.append((graphics.board[i][j], (i, j), check_move.check_moves_1((i, j), graphics.board)))
+        #             elif graphics.board[i][j] == 2:
+        #                 state_actions_list.append((graphics.board[i][j], (i, j), check_move.king_check_moves_2((i, j), graphics.board)))
+        #
+        #     state_actions_list = [state_action for state_action in state_actions_list if len(state_action[-1]) > 0]
+        #     state_actions_size = len(state_actions_list)
+        #
+        #     for state in state_actions_list:
+        #         for action in state[-1]:
+        #             board_string = str(graphics.board)
+        #             current_state_string = str(state[1])
+        #             current_action_string = str(action)
+        #             q_values.append(neural_network_model.predict_q_value(state[0], board_string, current_state_string, current_action_string))
+        #             q_values_states.append((state[1], action))
+        #
+        #     max_q_value = max(q_values, default=0)
+        #     best_action = []
+        #     for i in range(len(q_values)):
+        #         if q_values[i] == max_q_value:
+        #             best_action.append(q_values_states[i])
+        #
+        #     if len(best_action) < 1:
+        #         game_over()
+        #     else:
+        #         select_best_action = random.choice(best_action)
+        #         make_move = select_best_action[1]
+        #         selected_random_piece = (graphics.board[select_best_action[0][0]][select_best_action[0][1]], select_best_action[0], make_move)
+        #
+        #     player_1_turn = True
+        #     player_2_turn = False
+        #
+        #     if iterator:
+        #         make_move = random.choice(new_state_actions_list)
+        #         selected_random_piece = new_selected_random_piece
+        #         iterator = False
+        #
+        #     row_event, column_event = make_move
+        #     graphics.board[row_event][column_event] = selected_random_piece[0]
+        #
+        #     if graphics.board[row_event][column_event] == 1:
+        #         reward += 1
+        #     elif graphics.board[row_event][column_event] == 2:
+        #         reward += 2
+        #
+        #     total_pieces = []
+        #     for i in range(len(graphics.board)):
+        #         total_pieces += graphics.board[i]
+        #     pawns = total_pieces.count(1)
+        #     kings = total_pieces.count(2)
+        #     reward += (pawns + 3*kings)
+        #
+        #
+        #     if row_event == red_promotion:
+        #         reward += 10
+        #         graphics.board[row_event][column_event] = 2
+        #     graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
+        #
+        #     if abs(row_event - selected_random_piece[1][0]) == 2:
+        #         reward += 30
+        #         row_capture = (row_event + selected_random_piece[1][0]) // 2
+        #         column_capture = (column_event + selected_random_piece[1][1]) // 2
+        #         graphics.board[row_capture][column_capture] = 0
+        #         chain_eating = True
+        #
+        #     following_state = (selected_random_piece[0], make_move)
+        #
+        #     # replay_memory.push(piece=selected_random_piece[0], board=graphics.board, current_state=selected_random_piece[1], current_action=make_move, reward=reward, next_state=following_state, action_space=action_spaces)
+        #     #
+        #     # if len(replay_memory) > batch_size:
+        #     #     experience = replay_memory.sample(batch_size)
+        #     #     piece, board, current_state, current_action, reward, next_state, action_space = zip(*experience)
+        #     #     random_int = random.randint(0, len(piece) - 1)
+        #     #
+        #     #     piece = piece[random_int]
+        #     #     board = board[random_int]
+        #     #     current_state = current_state[random_int]
+        #     #     current_action = current_action[random_int]
+        #     #     reward = reward[random_int]
+        #     #     next_state = next_state[random_int]
+        #     #     action_space = action_space[random_int]
+        #     #
+        #     #     current_q_value, new_q_value = endgame_agent.update_neural_network(piece, board, current_state, current_action, reward, next_state, action_space)
+        #     #     current_q_value = torch.tensor(current_q_value, dtype=torch.float32, requires_grad=True)
+        #     #     new_q_value = torch.tensor(new_q_value, dtype=torch.float32, requires_grad=True)
+        #     #     loss = neural_network_model.criterion(current_q_value, new_q_value)
+        #     #     neural_network_model.optimiser.zero_grad()
+        #     #     loss.backward()
+        #     #     neural_network_model.optimiser.step()
+        #
+        #     if chain_eating:
+        #         reward += reward
+        #         chain_eating = False
+        #         player_1_turn = False
+        #         player_2_turn = True
+        #         state_actions_list = []
+        #         new_state_actions_list = []
+        #
+        #         if following_state[0] == 1:  # check here for all the possible moves
+        #             state_actions_list.append(check_move.eat_pieces_1(following_state[1], graphics.board))
+        #         elif following_state[0] == 2:
+        #             state_actions_list.append(check_move.king_eat_pieces_2(following_state[1], graphics.board))
+        #
+        #         for state_action in state_actions_list:
+        #             if len(state_action) > 0:
+        #                 new_state_actions_list += state_action
+        #         new_selected_random_piece = (following_state[0], following_state[1], new_state_actions_list)
+        #
+        #         if len(new_state_actions_list) < 1:
+        #             player_1_turn = True
+        #             player_2_turn = False
+        #
+        #         else:
+        #             iterator = True
 
         else: # placeholder for endgame
             for i in range(len(graphics.board)):
@@ -525,8 +525,8 @@ while run:
                     iterator = True
 
 
-        # agent.save_q_table_csv()
-        # endgame_agent.save_q_table_csv()
+        agent.save_q_table_csv()
+        endgame_agent.save_q_table_csv()
 
     elif player_1_turn and q_learning_wins >= 30:
         for event in pygame.event.get():
@@ -609,5 +609,5 @@ while run:
 
     graphics.draw_game_over()
     pygame.display.flip()
-    # agent.save_q_table_csv()
-    # endgame_agent.save_q_table_csv()
+    agent.save_q_table_csv()
+    endgame_agent.save_q_table_csv()

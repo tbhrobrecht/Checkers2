@@ -10,7 +10,7 @@ class UserInterface:
         self.dimensions = {
             "ROWS": 6,
             "COLUMNS": 6,
-            "checker_tile": 100
+            "checker_tile": 125
         }
 
         self.colors = {
