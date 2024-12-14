@@ -71,6 +71,13 @@ iterator = False
 
 random_bot_wins = 0
 q_learning_wins = 0
+winrate_list = []
+
+def calculate_winrate(self, bot_wins, ai_wins):
+    winrate = botwin / aiwin if ai_win > 0 else 0
+    winrate_size = len(winrate_list)
+    winrate_list.append([winrate_size, winrate])
+
 nn_endgame = True
 run = True
 while run:
@@ -91,8 +98,9 @@ while run:
         game_over()
 
     # random bot
-    elif player_1_turn and q_learning_wins < 30:
+    elif player_1_turn and q_learning_wins < 2000:
         state_actions_list = []
+
         for i in range(len(graphics.board)):
             for j in range(len(graphics.board[i])):
                 if graphics.board[i][j] == -1:
@@ -170,6 +178,10 @@ while run:
             print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
             game_over()
 
+        if number_of_moves > 500:
+            q_learning_wins += 1
+            print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
+            game_over()
         # q learning bot
 
     elif player_2_turn:
@@ -198,14 +210,20 @@ while run:
 
             if random.random() < greedy:
                 # if True:
-                random_piece = random.randint(0, state_actions_size - 1)  # selects any piece within state_actions_list
-                action_spaces = state_actions_list[random_piece][-1]
-                # print(action_spaces) # its workingggg [(6, 1), (6, 3)]
-                action_space_size = len(action_spaces) - 1
-                random_move = random.randint(0, action_space_size)  # selects a move from the state actions list, the selected random piece and from there the available moves
-                make_move = state_actions_list[random_piece][-1][random_move]  # coordinates within the state action list of the random piece, it's total actions and from its total actions one of them
-
-                selected_random_piece = (state_actions_list[random_piece][0], state_actions_list[random_piece][1], make_move)  # (2, (2, 1), (3, 0))
+                try:
+                    random_piece = random.randint(0, state_actions_size - 1)  # selects any piece within state_actions_list
+                    action_spaces = state_actions_list[random_piece][-1]
+                    # print(action_spaces) # its workingggg [(6, 1), (6, 3)]
+                    action_space_size = len(action_spaces) - 1
+                    random_move = random.randint(0, action_space_size)  # selects a move from the state actions list, the selected random piece and from there the available moves
+                    make_move = state_actions_list[random_piece][-1][random_move]  # coordinates within the state action list of the random piece, it's total actions and from its total actions one of them
+                    selected_random_piece = (state_actions_list[random_piece][0], state_actions_list[random_piece][1], make_move)  # (2, (2, 1), (3, 0))
+                except ValueError:
+                    # random_bot_wins += 1
+                    # print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
+                    # game_over()
+                    # break
+                    print("oopsies")
 
             else:
                 for state in state_actions_list:
@@ -524,11 +542,11 @@ while run:
                 else:
                     iterator = True
 
+        # agent.save_q_table_csv()
+        # endgame_agent.save_q_table_csv()
 
-        agent.save_q_table_csv()
-        endgame_agent.save_q_table_csv()
+    elif player_1_turn and q_learning_wins >= 2000:
 
-    elif player_1_turn and q_learning_wins >= 30:
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
@@ -538,6 +556,7 @@ while run:
                 game_over()
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                print((random_bot_wins / q_learning_wins) * 100, "%")
                 mouseX, mouseY = event.pos
                 row_event = mouseY // graphics.dimensions["checker_tile"]
                 column_event = mouseX // graphics.dimensions["checker_tile"]
@@ -607,7 +626,9 @@ while run:
 
     graphics.draw_board(selected_piece, valid_moves)
 
-    graphics.draw_game_over()
-    pygame.display.flip()
     agent.save_q_table_csv()
     endgame_agent.save_q_table_csv()
+    graphics.draw_game_over()
+    pygame.display.flip()
+    # agent.save_q_table_csv()
+    # endgame_agent.save_q_table_csv()
