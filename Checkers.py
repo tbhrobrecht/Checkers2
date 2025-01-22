@@ -3,6 +3,7 @@ import os
 import random
 import pygame
 import torch
+import numpy as np
 from DQN import QNetwork, ReplayMemory
 from GameLogic import CheckMove
 from UserInterface import UserInterface
@@ -74,15 +75,14 @@ def game_over():
     new_selected_random_piece = None
     player_1_turn = True
     player_2_turn = False
-    number_of_moves = 0
     neural_network_model.save_model()
     if last_game_number == 0:
         # with open("winrate.csv", mode="w", newline="") as file:
         #     writer = csv.writer(file)
         #     writer.writerow(["Game Number", "Win Rate", "Bot Won"])
-        update_winrate(last_game_number + q_learning_wins + random_bot_wins, q_learning_wins, random_bot_wins, random_bot_victory)
+        update_winrate(last_game_number + q_learning_wins + random_bot_wins, q_learning_wins, random_bot_wins, random_bot_victory, number_of_moves)
     else:
-        update_winrate(last_game_number + q_learning_wins + random_bot_wins, q_learning_wins + last_ai_win, random_bot_wins + last_bot_win, random_bot_victory)
+        update_winrate(last_game_number + q_learning_wins + random_bot_wins, q_learning_wins + last_ai_win, random_bot_wins + last_bot_win, random_bot_victory, number_of_moves)
     # print(agent.q_table)
     if (q_learning_wins + random_bot_wins) % 10 == 0:
         if os.path.getsize("Q_Table.csv") >= 48:
@@ -91,19 +91,21 @@ def game_over():
         if os.path.getsize("State_Q_Table.csv") >= 42:
             agent.load_q_table_csv()
             print("agent loaded")
+    number_of_moves = 0
+
 
 
 
 # resets the win rates?
 # with open("winrate.csv", mode="w", newline="") as file:
 #     writer = csv.writer(file)
-#     writer.writerow(["Game Number","AI Total Victories","Bot Total Victories","Win Rate","Bot Won"])
+#     writer.writerow(["Game Number","AI Total Victories","Bot Total Victories","Win Rate","Bot Won","Moves"])
 
-def update_winrate(game_number, ai_total_victories, bot_total_victories, bot_won):
+def update_winrate(game_number, ai_total_victories, bot_total_victories, bot_won, moves):
     with open("winrate.csv", mode="a", newline="") as file:
         writer = csv.writer(file)
         win_rate = round(ai_total_victories / game_number * 100, 2) if game_number > 0 else 0
-        writer.writerow([game_number, ai_total_victories, bot_total_victories, win_rate, bot_won])
+        writer.writerow([game_number, ai_total_victories, bot_total_victories, win_rate, bot_won, moves])
 
 # Function to get the last game number from the CSV file
 def get_last():
@@ -740,4 +742,24 @@ polynomial_regression_model = numpy.poly1d(numpy.polyfit(game_number, win_rate, 
 polynomial_regression = numpy.linspace(1, ai_total_victories + bot_total_victories, 10)
 plt.plot(polynomial_regression, polynomial_regression_model(polynomial_regression))
 
+plt.show()
+
+win_streak = []
+bot_win_game_number_list = list(bot_win_game_number)
+for i in range(len(bot_win_game_number_list)):
+    if i + 1 < len(bot_win_game_number_list):
+        if bot_win_game_number_list[i] == 1:
+            win_streak.append(0)
+        win_streak.append(bot_win_game_number_list[i + 1] - bot_win_game_number_list[i] - 1)
+    else:
+        win_streak.append(max(game_number) - bot_win_game_number_list[i])
+
+if bot_win_game_number_list[0] == 1:
+    bot_win_game_number_x = np.linspace(1, len(bot_win_game_number_list) + 1, len(bot_win_game_number_list) + 1)
+else:
+    bot_win_game_number_x = np.linspace(1, len(bot_win_game_number_list), len(bot_win_game_number_list))
+
+plt.plot(bot_win_game_number_x, win_streak)
+plt.scatter(bot_win_game_number_x, win_streak, color='orange', marker='.')
+plt.grid(True)
 plt.show()
