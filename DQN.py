@@ -37,20 +37,36 @@ class QNetwork(nn.Module):
         super(QNetwork, self).__init__()
 
         input_size = X.shape[1]
-        hidden_size = 128
+        hidden_size = 256
         output_size = 1
 
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, output_size)
+        # self.fc1 = nn.Linear(input_size, hidden_size)
+        # self.relu = nn.ReLU()
+        # self.fc2 = nn.Linear(hidden_size, output_size)
+        #
+        # self.criterion = nn.MSELoss()
+        # self.optimiser = optim.Adam(self.parameters(), lr=0.001)
 
-        self.criterion = nn.MSELoss()
-        self.optimiser = optim.Adam(self.parameters(), lr=0.001)
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, output_size)
+
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.2)
+        self.criterion = nn.SmoothL1Loss()
+        self.optimiser = optim.Adam(self.parameters(), lr=0.0005, weight_decay=1e-5)
+
+    # def forward(self, x):
+    #     out = self.fc1(x)
+    #     out = self.relu(out)
+    #     out = self.fc2(out)
+    #     return out
 
     def forward(self, x):
-        out = self.fc1(x)
-        out = self.relu(out)
-        out = self.fc2(out)
+        out = self.relu(self.fc1(x))
+        out = self.dropout(out)
+        out = self.relu(self.fc2(out))
+        out = self.fc3(out)
         return out
 
     def predict_q_value(self, piece, board, current_state, current_action):
