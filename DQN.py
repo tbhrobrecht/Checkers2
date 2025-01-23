@@ -82,23 +82,26 @@ class QNetwork(nn.Module):
 
 model = QNetwork()
 epochs = 1000
-for epoch in range(epochs):
-    model.train()
-    outputs = model(X_train)
-    loss = model.criterion(outputs, y_train)
 
-    model.optimiser.zero_grad()
-    loss.backward()
-    model.optimiser.step()
+runDQNAnalysis = True
+if runDQNAnalysis:
+    for epoch in range(epochs):
+        model.train()
+        outputs = model(X_train)
+        loss = model.criterion(outputs, y_train)
 
-    if (epoch+1) % 100 == 0:
-        print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
+        model.optimiser.zero_grad()
+        loss.backward()
+        model.optimiser.step()
 
-model.eval()
-with torch.no_grad():
-    y_pred = model(X_test)
-    test_loss = mean_squared_error(y_test.numpy(), y_pred.numpy())
-    print(f'Test Loss: {test_loss:.4f}')
+        if (epoch+1) % 100 == 0:
+            print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
+
+    model.eval()
+    with torch.no_grad():
+        y_pred = model(X_test)
+        test_loss = mean_squared_error(y_test.numpy(), y_pred.numpy())
+        print(f'Test Loss: {test_loss:.4f}')
 
 
 class ReplayMemory:

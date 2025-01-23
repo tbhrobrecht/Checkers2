@@ -2,7 +2,7 @@ import pandas as pd
 
 
 class State_QLearningAgent:
-    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.2, q_table_csv='State_Q_Table.csv'):
+    def __init__(self, alpha, gamma, epsilon, q_table_csv):
         self.q_table = {}
         self.alpha = alpha
         self.gamma = gamma
