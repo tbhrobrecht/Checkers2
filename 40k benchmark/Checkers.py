@@ -80,19 +80,13 @@ def game_over():
     else:
         update_winrate(last_game_number + q_learning_wins + random_bot_wins, q_learning_wins + last_ai_win, random_bot_wins + last_bot_win, random_bot_victory, number_of_moves)
     if (q_learning_wins + random_bot_wins) % 100 == 0 and (agent.epsilon > 0 or endgame_agent.epsilon > 0):
-        if os.path.getsize("5reset/Q_Table.csv") >= 48:
+        if os.path.getsize("Q_Table.csv") >= 48:
             endgame_agent.load_q_table_csv()
             print("endgame loaded")
-        if os.path.getsize("5reset/State_Q_Table.csv") >= 42:
+        if os.path.getsize("State_Q_Table.csv") >= 42:
             agent.load_q_table_csv()
             print("agent loaded")
-        if os.path.getsize("Bot_State_Q_Table.csv") >= 42:
-            bot_agent.load_q_table_csv()
-            print("bot agent loaded")
-
-
     number_of_moves = 0
-    # list_of_consecutive_moves = [] # reset
 
 # resets the win rates?
 # with open("winrate.csv", mode="w", newline="") as file:
@@ -140,11 +134,11 @@ iterator = False
 
 list_of_checks = []
 
-bot_q_learning_ai = True
+bot_q_learning_ai = False
 nn_endgame = True
-include_endgame = None
+include_endgame = True
 future_insight = False
-wins_before_player_move = 2000
+wins_before_player_move = 10000
 run = True
 # df = pd.read_csv("Q_Table.csv")
 while run:
@@ -166,7 +160,7 @@ while run:
         print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
         game_over()
 
-    # standard random bot
+    # random bot
     elif player_1_turn and q_learning_wins < wins_before_player_move and not bot_q_learning_ai:
         state_actions_list = []
 
@@ -261,8 +255,6 @@ while run:
             player_1_pieces += graphics.board[i]
         player_1_pieces = player_1_pieces.count(-1) + player_1_pieces.count(-2)
 
-        # early game state
-        # if number_of_moves <= 25 or player_1_pieces > 3:
         for i in range(len(graphics.board)):
             for j in range(len(graphics.board[i])):
                 if graphics.board[i][j] == -1:
@@ -273,7 +265,8 @@ while run:
         state_actions_list = [state_action for state_action in state_actions_list if len(state_action[-1]) > 0]
         state_actions_size = len(state_actions_list)
 
-        if random.random() < bot_agent.epsilon or number_of_moves >= 25 or player_1_pieces < 3: # if it is less than 0.2
+        if random.random() < bot_agent.epsilon:
+            # if True:
             try:
                 random_piece = random.randint(0, state_actions_size - 1)
                 action_spaces = state_actions_list[random_piece][-1]
@@ -282,14 +275,12 @@ while run:
                 make_move = state_actions_list[random_piece][-1][random_move]
                 selected_random_piece = (state_actions_list[random_piece][0], state_actions_list[random_piece][1], make_move)
             except ValueError:
-                q_learning_wins += 1
-                print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
+                # print("bot oopsies")
+                if len(state_actions_list) == 0:
+                    q_learning_wins += 1
+                    random_bot_victory = 0
                 game_over()
-                # break
-                # print("oopsies")
-                # print(graphics.board)
 
-        # number of moves <= 25 or player 1 pieces > 3
         else:
             for state in state_actions_list:
                 for action in state[-1]:
@@ -312,6 +303,11 @@ while run:
         player_1_turn = False
         player_2_turn = True
 
+        # if selected_random_piece[0] > 0:
+        #     print(selected_random_piece)
+        #     for i in range(len(graphics.board)):
+        #         print(graphics.board[i])
+
         if iterator:
             make_move = random.choice(new_state_actions_list)
             selected_random_piece = new_selected_random_piece
@@ -320,42 +316,39 @@ while run:
         row_event, column_event = make_move
         graphics.board[row_event][column_event] = selected_random_piece[0]
 
-        if graphics.board[row_event][column_event] == -1:
+        if graphics.board[row_event][column_event] == 1:
             # win_rate = round(ai_total_victories / game_number * 100, 2) if game_number > 0 else 0
             reward += 1 if number_of_moves <= 40 else 2
-        elif graphics.board[row_event][column_event] == -2:
+        elif graphics.board[row_event][column_event] == 2:
             reward += 2 if number_of_moves <= 40 else 1
 
         total_pieces = []
         for i in range(len(graphics.board)):
             total_pieces += graphics.board[i]
-        pawns = total_pieces.count(-1)
-        kings = total_pieces.count(-2)
+        pawns = total_pieces.count(1)
+        kings = total_pieces.count(2)
         reward += (pawns + 3*kings)
 
         if row_event == black_promotion:
-            reward += 10
             graphics.board[row_event][column_event] = -2
         graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
 
         if abs(row_event - selected_random_piece[1][0]) == 2:
-            reward += 30
             row_capture = (row_event + selected_random_piece[1][0]) // 2
             column_capture = (column_event + selected_random_piece[1][1]) // 2
             graphics.board[row_capture][column_capture] = 0
+            reward -= 30
             chain_eating = True
 
-        following_state = (selected_random_piece[0], make_move)  # following_state = graphics.board
-        # print(f"next state {following_state}")
+        following_state = (selected_random_piece[0], make_move)
 
-        # print(action_spaces)
-        if selected_random_piece[0] < 0 and number_of_moves <= 25 and player_1_pieces < 3:
+        if selected_random_piece[0] < 0:
             bot_agent.update_q_table(piece=selected_random_piece[0], current_state=selected_random_piece[1],
                              current_action=make_move, reward=reward,
                              next_state=following_state, action_space_size=action_spaces)
 
-
         if chain_eating:
+            reward += reward
             chain_eating = False
             player_1_turn = True
             player_2_turn = False
@@ -379,151 +372,8 @@ while run:
             else:
                 iterator = True
 
-        if number_of_moves > 200:
-            # q_learning_wins += 1
-            # random_bot_victory = 0
-            print(f"exceeded move limit: random bot: {random_bot_wins}, q learning: {q_learning_wins}")
-            game_over()
-
-
-    # random bot q learning ai state model
-    # elif player_1_turn and q_learning_wins < wins_before_player_move and bot_q_learning_ai:
-    #     number_of_moves += 1
-    #     q_values = []
-    #     q_values_states = []
-    #     state_actions_list = []
-    #
-    #     player_1_pieces = []
-    #     for i in range(len(graphics.board)):
-    #         player_1_pieces += graphics.board[i]
-    #     player_1_pieces = player_1_pieces.count(-1) + player_1_pieces.count(-2)
-    #
-    #     for i in range(len(graphics.board)):
-    #         for j in range(len(graphics.board[i])):
-    #             if graphics.board[i][j] == -1:
-    #                 state_actions_list.append((graphics.board[i][j], (i, j), check_move.check_moves_minus_1((i, j), graphics.board)))
-    #             elif graphics.board[i][j] == -2:
-    #                 state_actions_list.append((graphics.board[i][j], (i, j), check_move.king_check_moves_minus_2((i, j), graphics.board)))
-    #
-    #     state_actions_list = [state_action for state_action in state_actions_list if len(state_action[-1]) > 0]
-    #     state_actions_size = len(state_actions_list)
-    #
-    #     if random.random() < bot_agent.epsilon:
-    #         # if True:
-    #         try:
-    #             random_piece = random.randint(0, state_actions_size - 1)
-    #             action_spaces = state_actions_list[random_piece][-1]
-    #             action_space_size = len(action_spaces) - 1
-    #             random_move = random.randint(0, action_space_size)
-    #             make_move = state_actions_list[random_piece][-1][random_move]
-    #             selected_random_piece = (state_actions_list[random_piece][0], state_actions_list[random_piece][1], make_move)
-    #         except ValueError:
-    #             # print("bot oopsies")
-    #             if len(state_actions_list) == 0:
-    #                 q_learning_wins += 1
-    #                 random_bot_victory = 0
-    #             game_over()
-    #     else:
-    #         for state in state_actions_list:
-    #             for action in state[-1]:
-    #                 q_values.append(agent.get_q_value(state[0], state[1], action))
-    #                 q_values_states.append((state[1], action))
-    #
-    #         max_q_value = max(q_values, default=0)
-    #         best_action = []  # list of the best actions
-    #         for i in range(len(q_values)):
-    #             if q_values[i] == max_q_value:
-    #                 best_action.append(q_values_states[i])
-    #
-    #         if len(best_action) < 1:
-    #             game_over()
-    #         else:
-    #             select_best_action = random.choice(best_action)
-    #             make_move = select_best_action[1]
-    #             selected_random_piece = (graphics.board[select_best_action[0][0]][select_best_action[0][1]], select_best_action[0], make_move)
-    #
-    #     player_1_turn = False
-    #     player_2_turn = True
-    #     # if selected_random_piece[0] > 0:
-    #     #     print(selected_random_piece)
-    #     #     for i in range(len(graphics.board)):
-    #     #         print(graphics.board[i])
-    #     if iterator:
-    #         make_move = random.choice(new_state_actions_list)
-    #         selected_random_piece = new_selected_random_piece
-    #         iterator = False
-    #
-    #     row_event, column_event = make_move
-    #     graphics.board[row_event][column_event] = selected_random_piece[0]
-    #
-    #     if graphics.board[row_event][column_event] == 1:
-    #         # win_rate = round(ai_total_victories / game_number * 100, 2) if game_number > 0 else 0
-    #         reward += 1 if number_of_moves <= 40 else 2
-    #     elif graphics.board[row_event][column_event] == 2:
-    #         reward += 2 if number_of_moves <= 40 else 1
-    #
-    #     total_pieces = []
-    #     for i in range(len(graphics.board)):
-    #         total_pieces += graphics.board[i]
-    #     pawns = total_pieces.count(1)
-    #     kings = total_pieces.count(2)
-    #     reward += (pawns + 3*kings)
-    #
-    #     if row_event == black_promotion:
-    #         graphics.board[row_event][column_event] = -2
-    #     graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
-    #
-    #     if abs(row_event - selected_random_piece[1][0]) == 2:
-    #         row_capture = (row_event + selected_random_piece[1][0]) // 2
-    #         column_capture = (column_event + selected_random_piece[1][1]) // 2
-    #         graphics.board[row_capture][column_capture] = 0
-    #         reward -= 30
-    #         chain_eating = True
-    #     following_state = (selected_random_piece[0], make_move)
-    #
-    #     if selected_random_piece[0] < 0:
-    #         bot_agent.update_q_table(piece=selected_random_piece[0], current_state=selected_random_piece[1],
-    #                                  current_action=make_move, reward=reward,
-    #                                  next_state=following_state, action_space_size=action_spaces)
-    #     if chain_eating:
-    #         reward += reward
-    #         chain_eating = False
-    #         player_1_turn = True
-    #         player_2_turn = False
-    #         state_actions_list = []
-    #         new_state_actions_list = []
-    #         if following_state[0] == -1:
-    #             state_actions_list.append(check_move.eat_pieces_minus_1(following_state[1], graphics.board))
-    #         elif following_state[0] == -2:
-    #             state_actions_list.append(check_move.king_eat_pieces_minus_2(following_state[1], graphics.board))
-    #         for state_action in state_actions_list:
-    #             if len(state_action) > 0:
-    #                 new_state_actions_list += state_action
-    #         new_selected_random_piece = (following_state[0], following_state[1], new_state_actions_list)
-    #         if len(new_state_actions_list) < 1:
-    #             player_1_turn = False
-    #             player_2_turn = True
-    #         else:
-    #             iterator = True
-
-
     # q learning ai
     elif player_2_turn:
-        show_plt = True
-        if q_learning_wins % 200 == 0 and show_plt and q_learning_wins != 0:
-            show_plt = False
-            bsqt = pd.read_csv("Bot_State_Q_Table.csv")
-            keys = []
-            values = []
-            for i in range(len(bsqt)):
-                keys.append(i)
-                values.append(bsqt["Value"][i])
-            plt.scatter(keys, values, marker=".", alpha=0.8)
-            plt.title("Difference in Q Values")
-            plt.xlabel("State ID")
-            plt.ylabel("Q Value")
-            # plt.show()
-
         number_of_moves += 1
         q_values = []
         q_values_states = []
@@ -557,12 +407,12 @@ while run:
                     make_move = state_actions_list[random_piece][-1][random_move]
                     selected_random_piece = (state_actions_list[random_piece][0], state_actions_list[random_piece][1], make_move)
                 except ValueError:
-                    random_bot_wins += 1
-                    print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
-                    game_over()
+                    # random_bot_wins += 1
+                    # print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
+                    # game_over()
                     # break
-                    # print("oopsies")
-                    # print(graphics.board)
+                    print("oopsies")
+                    print(graphics.board)
 
             else:
                 for state in state_actions_list:
@@ -622,12 +472,9 @@ while run:
             following_state = (selected_random_piece[0], make_move)  # following_state = graphics.board
             # print(f"next state {following_state}")
 
-            try:
-                agent.update_q_table(piece=selected_random_piece[0], current_state=selected_random_piece[1],
+            agent.update_q_table(piece=selected_random_piece[0], current_state=selected_random_piece[1],
                                  current_action=make_move, reward=reward,
                                  next_state=following_state, action_space_size=action_spaces)
-            except NameError:
-                print("Name Error")
 
             if chain_eating:
                 reward += reward
@@ -654,167 +501,48 @@ while run:
                 else:
                     iterator = True
 
+        elif future_insight:
+            for i in range(len(graphics.board)):
+                for j in range(len(graphics.board[i])):
+                    if graphics.board[i][j] == 1:
+                        state_actions_list.append((graphics.board[i][j], (i, j), check_move.check_moves_1((i, j), graphics.board)))
+                    elif graphics.board[i][j] == 2:
+                        state_actions_list.append((graphics.board[i][j], (i, j), check_move.king_check_moves_2((i, j), graphics.board)))
 
-        # elif future_insight
-        # elif player_2_pieces < 3:
-        #     list_of_consecutive_moves = []
-        #     formatted_board = tuple(map(tuple, graphics.board))
-        #     for i in range(len(graphics.board)):
-        #         for j in range(len(graphics.board[i])):
-        #             if graphics.board[i][j] == 1:
-        #                 state_actions_list.append((graphics.board[i][j], (i, j), formatted_board, check_move.check_moves_1((i, j), graphics.board))) # piece, piece coordinates, (board), possible moves
-        #             elif graphics.board[i][j] == 2:
-        #                 state_actions_list.append((graphics.board[i][j], (i, j), formatted_board, check_move.king_check_moves_2((i, j), graphics.board)))
-        #
-        #     state_actions_list = [state_action for state_action in state_actions_list if len(state_action[-1]) > 0] # each element consists of piece, state, board, all actions of said state
-        #     # print()
-        #     # print("state_actions_list")
-        #     # for i in range(len(state_actions_list)):
-        #     #     print(state_actions_list[i])
-        #     # print()
-        #     state_actions_size = len(state_actions_list)
-        #
-        #     if random.random() < endgame_agent.epsilon:
-        #         try:
-        #             # multiple state_actions_list
-        #             # (1, (0, 0), [(2, 2)])
-        #             # (1, (1, 5), [(2, 4)])
-        #             # (1, (3, 3), [(4, 2), (4, 4)])
-        #             random_piece = random.randint(0, state_actions_size - 1)
-        #             action_spaces = state_actions_list[random_piece][-1] # all possible moves of selected random piece, eg. [(4, 2), (4, 4)]
-        #             action_space_size = len(action_spaces) - 1
-        #             random_move = random.randint(0, action_space_size) # integer selecting move from action_spaces, eg. 1
-        #             make_move = state_actions_list[random_piece][-1][random_move] # result of choosing index random_move from action_spaces, eg. (4, 4)
-        #             selected_random_piece = (state_actions_list[random_piece][0], state_actions_list[random_piece][1], state_actions_list[random_piece][2], make_move) # final result, eg. (1, (3, 3), (4, 4))
-        #             # print(action_spaces)
-        #             # print(random_move)
-        #             # print(make_move)
-        #             # print(selected_random_piece)
-        #             # print("end of try")
-        #             # print()
-        #         except ValueError:
-        #             random_bot_wins += 1
-        #             print(f"random bot: {random_bot_wins}, q learning: {q_learning_wins}")
-        #             game_over()
-        #             # break
-        #             print("oopsies fixed")
-        #             for i in range(len(graphics.board)):
-        #                 print(graphics.board[i])
-        #
-        #     else:
-        #         for state in state_actions_list: # state eg, (2, (5, 3), [(4, 2), (4, 4)])
-        #             for action in state[-1]: # action eg, (4, 2)
-        #                 formatted_board = tuple(map(tuple, graphics.board))
-        #                 key = (state[0], formatted_board, state[1], action)
-        #                 # if key in endgame_q_table:
-        #                 #     print(key)
-        #                 #     # print(state[0], formatted_board, state[1], action)
-        #                 #     print(f"single q value {endgame_agent.get_q_value(state[0], formatted_board, state[1], action)}")
-        #                 q_values.append(endgame_agent.get_q_value(state[0], formatted_board, state[1], action)) # graphics.board format doesnt matter, what does is how it reads the data off of the csv
-        #                 q_values_states.append((state[1], action))
-        #
-        #         max_q_value = max(q_values, default=0)
-        #         best_action = []
-        #         for i in range(len(q_values)):
-        #             if q_values[i] == max_q_value:
-        #                 best_action.append(q_values_states[i])
-        #         # print(best_action)
-        #         if len(best_action) < 1:
-        #             game_over()
-        #         else:
-        #             select_best_action = random.choice(best_action)
-        #             # print("select best action")
-        #             # print(select_best_action)
-        #             make_move = select_best_action[1]
-        #             selected_random_piece = (graphics.board[select_best_action[0][0]][select_best_action[0][1]], select_best_action[0], formatted_board, make_move)
-        #             # why do i see multiple best action moves but only one board?
-        #             # check if i have to shift any other values for the selected_random_piece, make move
-        #             # print(f"selected random piece {selected_random_piece}")
-        #             # (4, 2)
-        #             # (1, (3, 3), ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 1, 0, 0), (-2, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 2)), (4, 2))
-        #             # (4, 4)
-        #             # (2, (5, 5), ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 1, 0, 0, 0), (0, -2, 0, 0, 0, 2)), (4, 4))
-        #             # (5, 3)
-        #             # (2, (4, 4), ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (-2, 0, 1, 0, 2, 0), (0, 0, 0, 0, 0, 0)), (5, 3))
-        #             # print(make_move) # eg, (4, 2)
-        #             # print(selected_random_piece) # eg, (1, (3, 3), ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 1, 0, 0), (-2, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 2)), (4, 2))
-        #             list_of_consecutive_moves.append(selected_random_piece)
-        #             # append all the different board states
-        #             # calculate the best q value of those states and repeat?
-        #
-        #     # continue copying from below
-        #     player_1_turn = True
-        #     player_2_turn = False
-        #
-        #     if iterator:
-        #         make_move = random.choice(new_state_actions_list)
-        #         selected_random_piece = new_selected_random_piece
-        #         iterator = False
-        #
-        #     row_event, column_event = make_move
-        #     graphics.board[row_event][column_event] = selected_random_piece[0]
-        #
-        #     if graphics.board[row_event][column_event] == 1:
-        #         reward += 1
-        #     elif graphics.board[row_event][column_event] == 2:
-        #         reward += 2
-        #
-        #     total_pieces = []
-        #     for i in range(len(graphics.board)):
-        #         total_pieces += graphics.board[i]
-        #     pawns = total_pieces.count(1)
-        #     kings = total_pieces.count(2)
-        #     reward += (pawns + 3*kings)
-        #
-        #     if row_event == red_promotion:
-        #         reward += 10
-        #         graphics.board[row_event][column_event] = 2
-        #     graphics.board[selected_random_piece[1][0]][selected_random_piece[1][1]] = 0
-        #
-        #     if abs(row_event - selected_random_piece[1][0]) == 2:
-        #         reward += 30
-        #         row_capture = (row_event + selected_random_piece[1][0]) // 2
-        #         column_capture = (column_event + selected_random_piece[1][1]) // 2
-        #         graphics.board[row_capture][column_capture] = 0
-        #         chain_eating = True
-        #
-        #     following_state = (selected_random_piece[0], make_move)
-        #
-        #     endgame_agent.update_q_table(piece=selected_random_piece[0], board=graphics.board, current_state=selected_random_piece[1],
-        #                                  current_action=make_move, reward=reward,
-        #                                  next_state=following_state, action_space=action_spaces)
-        #
-        #     if chain_eating:
-        #         reward += reward
-        #         chain_eating = False
-        #         player_1_turn = False
-        #         player_2_turn = True
-        #         state_actions_list = []
-        #         new_state_actions_list = []
-        #
-        #         if following_state[0] == 1:
-        #             state_actions_list.append(check_move.eat_pieces_1(following_state[1], graphics.board))
-        #         elif following_state[0] == 2:
-        #             state_actions_list.append(check_move.king_eat_pieces_2(following_state[1], graphics.board))
-        #
-        #         for state_action in state_actions_list:
-        #             if len(state_action) > 0:
-        #                 new_state_actions_list += state_action
-        #         new_formatted_board = tuple(map(tuple, graphics.board))
-        #         new_selected_random_piece = (following_state[0], following_state[1], new_formatted_board, new_state_actions_list)
-        #         # print("new selected random piece")
-        #         # print(new_selected_random_piece)
-        #
-        #         if len(new_state_actions_list) < 1:
-        #             player_1_turn = True
-        #             player_2_turn = False
-        #
-        #         else:
-        #             iterator = True
+            state_actions_list = [state_action for state_action in state_actions_list if len(state_action[-1]) > 0]
+            state_actions_size = len(state_actions_list)
 
+            if random.random() < endgame_agent.epsilon:
+                # if True:
+                random_piece = random.randint(0, state_actions_size - 1)
+                action_spaces = state_actions_list[random_piece][-1]
+                action_space_size = len(action_spaces) - 1
+                random_move = random.randint(0, action_space_size)
+                make_move = state_actions_list[random_piece][-1][random_move]
 
-        elif nn_endgame: # placeholder for `nn` endgame
-            neural_network_model.load_state_dict(torch.load('5reset/DQN.pth'))
+                selected_random_piece = (state_actions_list[random_piece][0], state_actions_list[random_piece][1], make_move)
+
+            else:
+                for state in state_actions_list:
+                    for action in state[-1]:
+                        q_values.append(endgame_agent.get_q_value(state[0], graphics.board, state[1], action))
+                        q_values_states.append((state[1], action))
+
+                max_q_value = max(q_values, default=0)
+                best_action = []
+                for i in range(len(q_values)):
+                    if q_values[i] == max_q_value:
+                        best_action.append(q_values_states[i])
+
+                if len(best_action) < 1:
+                    game_over()
+                else:
+                    select_best_action = random.choice(best_action)
+                    make_move = select_best_action[1]
+                    selected_random_piece = (graphics.board[select_best_action[0][0]][select_best_action[0][1]], select_best_action[0], make_move)
+
+        elif nn_endgame: # placeholder for nn endgame
+            neural_network_model.load_state_dict(torch.load('DQN.pth'))
             neural_network_model.eval()
             for i in range(len(graphics.board)):
                 for j in range(len(graphics.board[i])):
@@ -1163,13 +891,10 @@ while run:
 
     # agent.save_q_table_csv()
     # endgame_agent.save_q_table_csv()
-    bot_agent.save_q_table_csv()
+    # bot_agent.save_q_table_csv()
 
     pygame.display.flip()
 
-plt.savefig("Differences in Q Values")
-plt.show()
-# plt.show()
 #
 # df = pd.read_csv("winrate.csv")
 #

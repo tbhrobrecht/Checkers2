@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
 
-file_path = "Q_Table.csv"
+file_path = "5reset/Q_Table.csv"
 df = pd.read_csv(file_path)
 
 
@@ -77,13 +77,13 @@ class QNetwork(nn.Module):
         return q_value
 
     def save_model(self):
-        torch.save(self.state_dict(), 'DQN.pth')
+        torch.save(self.state_dict(), '5reset/DQN.pth')
 
 
 model = QNetwork()
 epochs = 1000
 
-runDQNAnalysis = True
+runDQNAnalysis = False
 if runDQNAnalysis:
     for epoch in range(epochs):
         model.train()

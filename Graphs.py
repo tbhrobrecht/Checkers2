@@ -122,16 +122,21 @@ bot_win_indices = df["Bot Won"] > 0
 bot_win_game_number = game_number[bot_win_indices]
 bot_wins = df["Bot Won"][bot_win_indices]
 
-plt.plot(game_number, win_rate)
+plt.plot(game_number, win_rate, label="Win Rate")
 # plt.plot([0, max(game_number)], [95, 95])
-plt.scatter(bot_win_game_number, bot_wins, marker=".", alpha=0.5)
+plt.scatter(bot_win_game_number, bot_wins, marker=".", alpha=0.5, label="Bot Victory")
 
 # polynomial_regression = numpy.linspace(1, (q_learning_wins + random_bot_wins) * 1.01, 10)
 polynomial_regression_model = numpy.poly1d(numpy.polyfit(game_number, win_rate, 1)) #deg 10
 polynomial_regression = numpy.linspace(1, ai_total_victories + bot_total_victories, 10)
-plt.plot(polynomial_regression, polynomial_regression_model(polynomial_regression))
+plt.plot(polynomial_regression, polynomial_regression_model(polynomial_regression), label="Linear Regression")
 plt.title("Win Rate")
+plt.xlabel("Game Number")
+plt.ylabel("Win Rate")
 plt.grid(True)
+plt.savefig("winrate.png")
+# plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+
 if show_all_graphs:
     plt.show()
 
@@ -166,7 +171,7 @@ plt.grid(True)
 if show_all_graphs:
     plt.show()
 
-qtable = pd.read_csv("Q_Table.csv")
+qtable = pd.read_csv("5reset/Q_Table.csv")
 # qtable_mean = qtable["Value"].mean()
 # qtable_median = qtable["Value"].median()
 
@@ -213,22 +218,29 @@ ai_victory_list_x = []
 # print(bot_victory_list)
 
 for i in range(len(game_number)):
-    if bot_win[i] == 100 and number_of_moves[i] != 201:
+    if bot_win[i] == 100 and number_of_moves[i] < 200:
         bot_victory_list.append(number_of_moves[i])
         bot_victory_list_x.append(game_number[i])
-    if bot_win[i] != 100 and number_of_moves[i] != 201:
+    if bot_win[i] != 100 and number_of_moves[i] < 200:
         ai_victory_list.append(number_of_moves[i])
         ai_victory_list_x.append(game_number[i])
 # bot_victory_list_x = np.linspace(0, len(bot_victory_list), len(bot_victory_list))
 # ai_victory_list_x = np.linspace(0, len(ai_victory_list), len(ai_victory_list))
-plt.scatter(ai_victory_list_x, ai_victory_list, marker=".", alpha=0.1)
-plt.scatter(bot_victory_list_x, bot_victory_list, marker=".", alpha=1)
+plt.scatter(ai_victory_list_x, ai_victory_list, marker=".", alpha=0.1, label="AI Victory")
+plt.scatter(bot_victory_list_x, bot_victory_list, marker=".", alpha=1, label="Bot Victory")
+print(np.average(ai_victory_list))
+print(np.average(bot_victory_list))
+plt.ylabel("Moves")
+plt.xlabel("Episode (Game) Number")
+plt.title("Moves Taken Until A Win")
 polynomial_regression_model = numpy.poly1d(numpy.polyfit(ai_victory_list_x, ai_victory_list, 1)) #deg 10
 polynomial_regression = numpy.linspace(1, ai_victory_list_x, 10)
-plt.plot(polynomial_regression, polynomial_regression_model(polynomial_regression), color='black')
+plt.plot(polynomial_regression, polynomial_regression_model(polynomial_regression), color='black', label="AI Linear Regression Model")
 polynomial_regression_model = numpy.poly1d(numpy.polyfit(bot_victory_list_x, bot_victory_list, 1)) #deg 10
 polynomial_regression = numpy.linspace(1, bot_victory_list_x, 10)
-plt.plot(polynomial_regression, polynomial_regression_model(polynomial_regression), color='orange')
+plt.plot(polynomial_regression, polynomial_regression_model(polynomial_regression), color='brown', label="Bot Linear Regression Model")
+# plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+plt.savefig("Moves Taken Until A Win")
 
 if show_all_graphs:
     plt.show()
@@ -242,150 +254,20 @@ plt.boxplot([ai_victory_list, bot_victory_list])
 plt.plot([1,2], [25,25])
 plt.show()
 
-#
-#
-# import pandas as pd
-#
-# df = pd.read_csv('Q_Table.csv')
-# board = df['Board']
-# # print(board[0] == str(((1, 0, 1, 0, 1, 0), (0, 0, 0, 1, 0, 1), (1, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, -1), (-1, 0, -1, 0, 0, 0), (0, -1, 0, -1, 0, -1))))
-# # print(board)
-# # print(type(board[0]))
-# lst = [1,
-#        "((1, 0, 1, 0, 1, 0), (0, 1, 0, 0, 0, 1), (0, 0, 1, 0, 0, 0), (0, 0, 0, -1, 0, 0), (-1, 0, 0, 0, -1, 0), (0, -1, 0, -1, 0, -1))",
-#        "(1, 3)", "(2, 2)", 0.8
-#        ]
-# lst = [1,
-#        "((1, 0, 0, 0, 1, 0), (0, 0, 0, -1, 0, 1), (0, 0, 0, 0, 0, 0), (0, 1, 0, -1, 0, 0), (0, 0, 0, 0, 2, 0), (0, -1, 0, 0, 0, -1))",
-#        "(2, 0)", "(3, 1)", 0.9
-#        ]
-# lst = [1,
-#        "[[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0], [0, 2, 0, -2, 0, 0]]",
-#        "(3, 3)", "(4, 4)", 0.6000000000000001
-#        ]
-# lst = [2,
-#        "[[0, 0, 0, 0, -2, 0], [0, 0, 0, -2, 0, -1], [0, 0, 2, 0, 0, 0], [0, 0, 0, 0, 0, 0], [2, 0, 0, 0, 0, 0], [0, 0, 0, -2, 0, 0]]",
-#        "(3, 1)", "(2, 2)", 1.1
-#        ]
-# lst = [2,
-#        "[[0, 0, 0, 0, 0, 0], [0, -2, 0, 0, 0, 2], [0, 0, 0, 0, 0, 0], [0, 0, 0, -2, 0, 0], [0, 0, 0, 0, -2, 0], [0, 0, 0, 0, 0, 0]]",
-#        "(2, 4)", "(1, 5)", 0.8
-#        ]
-# lst = [(2,
-#         "[[0, 0, 0, 0, -2, 0], [0, -2, 0, 0, 0, -1], [0, 0, 0, 0, 0, 0], [0, 2, 0, 0, 0, 2], [0, 0, -2, 0, 0, 0], [0, 0, 0, 0, 0, 2]]",
-#         "(3, 1)", "(2, 2)")
-#        ]
-#
-# lst = [2,
-#        '((0, 0, 0, 0, 0, 0), (0, 0, 0, 2, 0, 0), (0, 0, -2, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0))',
-#        '(1, 3)', '(3, 1)'
-#        ]
-# print(df.isin(lst))
-# print(list(df.isin(lst)))
-# #
-# # for i in range(len(df)):
-# #        # if list(df.isin(lst))[i][1]:
-# #        #        print(df.iloc[i])
-# #        print(df.isin(lst))[i]
-#
-# word = str()
-# for i in range(len(df.loc[0])):
-#        word += str(df.loc[0][i])
-#        word += ", "
-# print(word)
-# print(df.loc[0])
-# print(df.iloc[2])
-# print()
-#
-# row = df.iloc[-1].tolist()
-# lst = [2,
-#        '((0, 0, 0, 0, 0, 0), (0, -2, 0, 0, 0, 0), (2, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0))',
-#        '(2, 0)', '(0, 2)'
-#        ]
-# row.pop(-1)
-# print(row)
-# print(lst)
-# for i in range(len(df)):
-#        if df.iloc[i].tolist() == lst:
-#               print(i)
-#               print("here")
-#        # else: print("not")
-#
-# print(row == lst)
-#
-# df = pd.read_csv("Q_Table.csv")
-# for i in range(len(df)):
-#     row = df.iloc[i].tolist()
-#     row.pop(-1)
-#     print(row)
-#
-#
-# from QLearningAgent import QLearningAgent
-#
-# endgame_agent = QLearningAgent(alpha=0.1, gamma=0.9, epsilon=0, q_table_csv="Q_Table.csv")
-# endgame_q_table = endgame_agent.q_table
-# print()
-# # print(endgame_agent.load_q_table_csv())
-# for i in endgame_q_table:
-#        print(i[1])
-#        for j in range(len(i[1])):
-#               print(i[1][j])
-#        print()
-#        # for j in range(len(i[1])):
-#        #        print(i[j])
-# print()
-# print(endgame_agent.get_q_value(1, "((1, 0, 1, 0, 1, 0), (0, 0, 0, 1, 0, 0), (-1, 0, 1, 0, 1, 0), (0, 0, 0, 0, 0, 0), (0, 0, -1, 0, -1, 0), (0, -1, 0, -1, 0, -1))", "(1, 1)", "(2, 2)")
-#       )
-# print(endgame_q_table.keys())
-# print(endgame_agent.get_q_value(1,"((1, 0, 1, 0, 1, 0), (0, 0, 0, 1, 0, 0), (-1, 0, 1, 0, 1, 0), (0, 0, 0, 0, 0, 0), (0, 0, -1, 0, -1, 0), (0, -1, 0, -1, 0, -1))","(1, 1)","(2, 2)"))
-# print(endgame_q_table.get(0))
-#
-# state = (1, ((1, 0, 1, 0, 1, 0), (0, 0, 0, 1, 0, 0), (-1, 0, 1, 0, 1, 0), (0, 0, 0, 0, 0, 0), (0, 0, -1, 0, -1, 0), (0, -1, 0, -1, 0, -1)), (1, 1), (2, 2))
-# state = (2, ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, -2), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 2, 0, 0)), (4, 2), (5, 0))
-# state = (2, ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, -2), (0, 0, 0, 0, 0, 0), (0, -2, 0, 0, 0, 0), (0, 0, 2, 0, 0, 0), (0, 0, 0, 0, 0, 0)), (5, 1), (4, 2))
-# state = (2, ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 2), (0, 0, 0, 0, 0, 0), (0, 0, 0, -2, 0, 0), (0, 0, 0, 0, 0, 0), (0, 2, 0, 2, 0, 0)), (0, 4), (1, 5))
-# state = (2, ((0, 0, 0, 0, 0, 0), (0, 2, 0, 0, 0, 0), (0, 0, -2, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0)), (1, 1), (3, 3))
-#
-# state = (2, ((0, 0, 0, 0, 0, 0), (0, 0, 0, -2, 0, 0), (0, 0, 2, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 1, 0), (0, 0, 0, 2, 0, 2)), (5, 3), (4, 2))
-# state = (1, ((1, 0, 1, 0, 1, 0), (0, 1, 0, 1, 0, 1), (0, 0, 0, 0, 0, 0), (0, -1, 0, 0, 0, 0), (0, 0, -1, 0, -1, 0), (0, -1, 0, -1, 0, -1)), (1, 1), (2, 0))
-# state = (1, ((1, 0, 1, 0, 1, 0), (0, 1, 0, 1, 0, 1), (0, 0, 0, 0, 0, 0), (0, -1, 0, 0, 0, 0), (-1, 0, 0, 0, -1, 0), (0, -1, 0, -1, 0, -1)), (1, 1), (2, 2))
-# state = (1, ((1, 0, 1, 0, 1, 0), (0, 1, 0, 1, 0, 1), (0, 0, 0, 0, 0, 0), (0, 0, 0, -1, 0, 0), (-1, 0, 0, 0, -1, 0), (0, -1, 0, -1, 0, -1)), (1, 3), (2, 4))
-# state = (1, ((1, 0, 1, 0, 1, 0), (0, 1, 0, 1, 0, 1), (0, 0, 0, 0, 0, 0), (0, 0, 0, -1, 0, 0), (-1, 0, 0, 0, -1, 0), (0, -1, 0, -1, 0, -1)), (1, 1), (2, 2))
-# state = (1, ((1, 0, 1, 0, 1, 0), (0, 1, 0, -1, 0, 1), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, -1, 0, -1, 0), (0, -1, 0, -1, 0, -1)), (0, 4), (2, 2))
-#
-#
-# endgame_q_table.update()
-#
-# # for i in endgame_q_table:
-# #        if i == state:
-# #               print(endgame_q_table.get(i))
-# if state in endgame_q_table:
-#        print(list(endgame_q_table.keys()).index(state))
-#        print(endgame_q_table.get(state))
-# else:
-#        print("not found")
-# print(state in endgame_q_table)
-#
-#
-#
-# list_of_checks =
-#
-#
+
+df = pd.read_csv("Bot_State_Q_Table.csv")
+# Piece,Current State,Current Action,Value
+
 # print(len(df))
-#
-# print(df.isin(lst))
-# for i in len(df):
-#        if df.isin(lst):
-#               print(df)
-#
-# board = ((1, 0, 1, 0, 1, 0), (0, 1, 0, 1, 0, 1), (0, 0, 0, 0, 0, 0), (0, -1, 0, 0, 0, 0), (0, 0, -1, 0, -1, 0), (0, -1, 0, -1, 0, -1))
-# board = ((1, 0, 1, 0, 1, 0), (0, 1, 0, 1, 0, 1), (0, 0, 0, 0, 0, 0), (0, 0, 0, -1, 0, 0), (-1, 0, 0, 0, -1, 0), (0, -1, 0, -1, 0, -1))
-# for i in range(len(board)):
-#        print(board[i])
-# board_table = ((1, 0, 1, 0, 1, 0), (0, 0, 0, 1, 0, 1), (0, 0, 1, 0, 0, 0), (0, -1, 0, 0, 0, 0), (0, 0, -1, 0, -1, 0), (0, -1, 0, -1, 0, -1))
-# board_table = ((0, 0, 0, 0, -2, 0), (0, 0, 0, -2, 0, -1), (0, 0, 2, 0, 0, 0), (0, 0, 0, 0, 0, 0), (2, 0, 0, 0, 0, 0), (0, 0, 0, -2, 0, 0))
-# board_table = ((0, 0, 0, 0, 0, 0), (0, 0, 0, -2, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 2, 0, 0))
-# board_table = ((-2, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 1, 0), (0, 0, 0, 1, 0, 0), (-1, 0, 0, 0, -1, 0), (0, -1, 0, 2, 0, 0))
-# board_table = [[0, 0, 0, 0, 0, 0], [0, 2, 0, 0, 0, 0], [0, 0, 0, 0, -2, 0], [0, 2, 0, 0, 0, 2], [2, 0, 0, 0, 0, 0], [0, 0, 0, 2, 0, 0]]
-# for i in range(len(board_table)):
-#        print(board_table[i])
+keys = []
+values = []
+for i in range(len(df)):
+    # key = str(df["Piece"][i]) + "," + str(df["Current State"][i]) + "," + str(df["Current Action"][i])
+    key = i
+    keys.append(key)
+    values.append(df["Value"][i])
+print(keys)
+print(values)
+plt.scatter(keys, values, marker=".", alpha=0.1)
+plt.show()
+
